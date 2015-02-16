@@ -145,6 +145,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	}
 
 	namedWindow("Carrier", 1);
+	namedWindow("subImage", 1);
 	imshow("Carrier", image);
 
 	setMouseCallback("Carrier", mouseClick, NULL);
@@ -238,6 +239,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	original = imread("E:\\Pictures\\marine-field-sky.jpg");
 
 	cvtColor(original, fullImageHSV, CV_BGR2HLS);
+	cvtColor(original, original, CV_BGR2HLS);
 
 	for (int x = Pos1.x; x < Pos2.x; x++)
 	{
@@ -335,15 +337,49 @@ int _tmain(int argc, _TCHAR* argv[])
 		}
 	}
 
-	cvtColor(fullImageHSV, image, CV_HLS2BGR);
+	Point topLeft, bottomRight;
+	
+	topLeft.x = Pos1.x;
+	topLeft.y = Pos1.y;
+
+	bottomRight.x = Pos2.x;
+	bottomRight.y = Pos2.y;
+
+	Rect region(topLeft , bottomRight);
+	cvtColor(fullImageHSV, fullImageHSV, CV_HLS2BGR);
+	Mat subImage = fullImageHSV(region);
+	Mat blurredImage;
+
+	blur(subImage, blurredImage, Size(25, 25), Point(-1, -1));
+
+	for (int x = Pos1.x; x < Pos2.x; x++)
+	{
+		for (int y = Pos1.y; y < Pos2.y; y++)
+		{
+			if (fullImageHSV.at<Vec3b>(Point(x, y))[1] == 200 + (turbulence(x, y, 16)) / 4)
+			{
+				cout << "Using original";
+				fullImageHSV.at<Vec3b>(Point(x, y)) = subImage.at<Vec3b>(Point(x - Pos1.x, y - Pos1.y));
+			}
+
+			else
+			{
+				//cout << "Using blurred version" << endl;
+				fullImageHSV.at<Vec3b>(Point(x, y)) = blurredImage.at<Vec3b>(Point(x - Pos1.x, y - Pos1.y));
+			}
+		}
+	}
+
+	//cvtColor(fullImageHSV, image, CV_HLS2BGR);
 	/*L = 192 + Uint8(turbulence(x, y, 64)) / 3;
 	color = HSLtoRGB(ColorHSL(169, 255, L));
 
 	pset(x, y, color);
 	}*/
 
-	imwrite("E:\\Pictures\\marine-field-sky-steg.jpg", image);
-	imshow("Carrier", image);
+	imwrite("E:\\Pictures\\marine-field-sky-steg.jpg", fullImageHSV);
+	imshow("Carrier", fullImageHSV);
+	imshow("subImage", subImage);
 	waitKey(0);
 
 	return 0;

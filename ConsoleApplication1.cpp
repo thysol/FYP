@@ -231,6 +231,9 @@ int _tmain(int argc, _TCHAR* argv[])
 	Mat fullImageHSV;
 	int distanceFromEdge;
 	int finalDistance;
+	int started = 0;
+	int top, bottom;
+	char **cloud = (char **)malloc((Pos2.x - Pos1.x) * (Pos2.y - Pos1.y));
 
 	original = imread("E:\\Pictures\\marine-field-sky.jpg");
 
@@ -240,6 +243,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	{
 		for (int y = Pos1.y; y < Pos2.y; y++)
 		{
+			//cloud[x - Pos1.x][y - Pos1.y] = 0;
+
 			finalDistance = 1000000;
 			distanceFromEdge = y - Pos1.y;
 
@@ -277,7 +282,56 @@ int _tmain(int argc, _TCHAR* argv[])
 				colour[1] = 200 + (turbulence(x, y, 64)) / 4;
 			}
 
-			fullImageHSV.at<Vec3b>(Point(x, y)) = colour;
+
+			//fullImageHSV.at<Vec3b>(Point(x, y)) = colour;
+		}
+
+		if (rand() % 2 && !started)
+		{
+			started = 1;
+			int position = (rand() % (Pos2.y - Pos1.y)) + Pos1.y;
+			fullImageHSV.at<Vec3b>(Point(x, position)) = colour;
+			//cloud[x][position] = 1;
+			top = position;
+			bottom = position;
+		}
+
+		else if (started)
+		{
+			if (rand() % 2)
+			{
+				top++;
+			}
+
+			else
+			{
+				top--;
+			}
+
+			if (rand() % 2)
+			{
+				bottom++;
+			}
+
+			else
+			{
+				bottom--;
+			}
+
+			if (top + 20 >= bottom)
+			{
+				top--;
+				bottom++;
+			}
+
+			cout << bottom - top << endl;
+
+			for (int y = top; y < bottom; y++)
+			{
+				colour[2] = 0;
+				colour[1] = 200 + (turbulence(x, y, 16)) / 4;
+				fullImageHSV.at<Vec3b>(Point(x, y)) = colour;
+			}
 		}
 	}
 
@@ -288,6 +342,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	pset(x, y, color);
 	}*/
 
+	imwrite("E:\\Pictures\\marine-field-sky-steg.jpg", image);
 	imshow("Carrier", image);
 	waitKey(0);
 

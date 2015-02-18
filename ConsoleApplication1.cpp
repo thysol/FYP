@@ -146,6 +146,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	namedWindow("Carrier", 1);
 	namedWindow("subImage", 1);
+	namedWindow("info", 1);
 	imshow("Carrier", image);
 
 	setMouseCallback("Carrier", mouseClick, NULL);
@@ -234,12 +235,31 @@ int _tmain(int argc, _TCHAR* argv[])
 	int finalDistance;
 	int started = 0;
 	int top, bottom;
-	char **cloud = (char **)malloc((Pos2.x - Pos1.x) * (Pos2.y - Pos1.y));
+	char **cloudLayer;
+
+	if ((cloudLayer = (char**)malloc(1600*sizeof(char*))) == NULL)
+	{ /* error */
+	}
+
+	for (int i = 0; i < 1600; i++)
+	{
+		/* x_i here is the size of given row, no need to
+		* multiply by sizeof( char ), it's always 1
+		*/
+		if ((cloudLayer[i] = (char*)malloc(900)) == NULL)
+		{ /* error */
+		}
+
+		for (int j = 0; j < 900; j++)
+		{
+			cloudLayer[i][j] = 0;
+		}
+	}
 
 	original = imread("E:\\Pictures\\marine-field-sky.jpg");
 
 	cvtColor(original, fullImageHSV, CV_BGR2HLS);
-	cvtColor(original, original, CV_BGR2HLS);
+	//cvtColor(original, original, CV_BGR2HLS);
 
 	for (int x = Pos1.x; x < Pos2.x; x++)
 	{
@@ -291,7 +311,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		if (rand() % 2 && !started)
 		{
 			started = 1;
-			int position = (rand() % (Pos2.y - Pos1.y)) + Pos1.y;
+			int position = ((Pos2.y - Pos1.y) / 2) + Pos1.y;//(rand() % (Pos2.y - Pos1.y)) + Pos1.y;
 			fullImageHSV.at<Vec3b>(Point(x, position)) = colour;
 			//cloud[x][position] = 1;
 			top = position;
@@ -320,7 +340,7 @@ int _tmain(int argc, _TCHAR* argv[])
 				bottom--;
 			}
 
-			if (top + 20 >= bottom)
+			if (top + 200 >= bottom)
 			{
 				top--;
 				bottom++;
@@ -331,8 +351,13 @@ int _tmain(int argc, _TCHAR* argv[])
 			for (int y = top; y < bottom; y++)
 			{
 				colour[2] = 0;
-				colour[1] = 200 + (turbulence(x, y, 16)) / 4;
+				colour[1] = 200 + (turbulence(x, y, 64)) / 4;
 				fullImageHSV.at<Vec3b>(Point(x, y)) = colour;
+
+				if (y - top > 20 && bottom - y > 20)
+				{
+					cloudLayer[x][y] = 1;
+				}
 			}
 		}
 	}
@@ -347,18 +372,19 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	Rect region(topLeft , bottomRight);
 	cvtColor(fullImageHSV, fullImageHSV, CV_HLS2BGR);
-	Mat subImage = fullImageHSV(region);
+	Mat subImage = fullImageHSV(region).clone();
 	Mat blurredImage;
 
-	blur(subImage, blurredImage, Size(25, 25), Point(-1, -1));
+	//blur(subImage, blurredImage, Size(7, 7), Point(-1, -1));
+	GaussianBlur(subImage, blurredImage, Size(11, 11), 0, 0);
 
 	for (int x = Pos1.x; x < Pos2.x; x++)
 	{
 		for (int y = Pos1.y; y < Pos2.y; y++)
 		{
-			if (fullImageHSV.at<Vec3b>(Point(x, y))[1] == 200 + (turbulence(x, y, 16)) / 4)
+			if (cloudLayer[x][y] == 1)
 			{
-				cout << "Using original";
+				//cout << "Using original";
 				fullImageHSV.at<Vec3b>(Point(x, y)) = subImage.at<Vec3b>(Point(x - Pos1.x, y - Pos1.y));
 			}
 
@@ -370,6 +396,16 @@ int _tmain(int argc, _TCHAR* argv[])
 		}
 	}
 
+	//blur(subImage, blurredImage, Size(7, 7), Point(-1, -1));
+	GaussianBlur(subImage, blurredImage, Size(7, 7), 0, 0);
+
+	for (int x = Pos1.x; x < Pos2.x; x++)
+	{
+		for (int y = Pos1.y; y < Pos2.y; y++)
+		{
+			//fullImageHSV.at<Vec3b>(Point(x, y)) = blurredImage.at<Vec3b>(Point(x - Pos1.x, y - Pos1.y));
+		}
+	}
 	//cvtColor(fullImageHSV, image, CV_HLS2BGR);
 	/*L = 192 + Uint8(turbulence(x, y, 64)) / 3;
 	color = HSLtoRGB(ColorHSL(169, 255, L));
@@ -379,7 +415,8 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	imwrite("E:\\Pictures\\marine-field-sky-steg.jpg", fullImageHSV);
 	imshow("Carrier", fullImageHSV);
-	imshow("subImage", subImage);
+	imshow("subImage", blurredImage);
+	imshow("info", subImage);
 	waitKey(0);
 
 	return 0;

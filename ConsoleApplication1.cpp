@@ -18,8 +18,8 @@ struct Pos
 	int y;
 };
 
-#define noiseWidth 1600  
-#define noiseHeight 900
+#define noiseWidth 5115  
+#define noiseHeight 3061
 
 double noise[noiseWidth][noiseHeight]; //the noise array
 
@@ -136,7 +136,7 @@ void mouseClick(int event, int x, int y, int flags, void* userdata)
 int _tmain(int argc, _TCHAR* argv[])
 {
 	mode = 0;
-	image = imread("E:\\Pictures\\marine-field-sky.jpg");
+	image = imread("E:\\Pictures\\DSCN4637.jpg");
 
 	if (image.empty())
 	{
@@ -256,12 +256,15 @@ int _tmain(int argc, _TCHAR* argv[])
 		}
 	}
 
-	original = imread("E:\\Pictures\\marine-field-sky.jpg");
+	original = imread("E:\\Pictures\\DSCN4637.jpg");
 
 	cvtColor(original, fullImageHSV, CV_BGR2HLS);
 	//cvtColor(original, original, CV_BGR2HLS);
 
-	for (int x = Pos1.x; x < Pos2.x; x++)
+	int end = 0;
+	int stop = 0;
+
+	for (int x = Pos1.x; x < Pos2.x && !stop; x++)
 	{
 		for (int y = Pos1.y; y < Pos2.y; y++)
 		{
@@ -340,10 +343,42 @@ int _tmain(int argc, _TCHAR* argv[])
 				bottom--;
 			}
 
-			if (top + 200 >= bottom)
+			if (top + 20 >= bottom && !end)
 			{
-				top--;
-				bottom++;
+				if (rand() % 2)
+				{
+					top--;
+					bottom++;
+				}
+			}
+
+			if (top - 5 < Pos1.y)
+			{
+				top = Pos1.y + 5;
+			}
+
+			if (bottom + 5 > Pos2.y)
+			{
+				bottom = Pos2.y - 5;
+			}
+
+			if (Pos2.x - x < (bottom - top) * 2)
+			{
+				end = 1;
+			}
+
+			if (end)
+			{
+				if (rand() % 2)
+				{
+					top++;
+					bottom--;
+				}
+			}
+
+			if (bottom <= top && Pos2.x - x < 10)
+			{
+				stop = 1;
 			}
 
 			cout << bottom - top << endl;
@@ -351,10 +386,10 @@ int _tmain(int argc, _TCHAR* argv[])
 			for (int y = top; y < bottom; y++)
 			{
 				colour[2] = 0;
-				colour[1] = 200 + (turbulence(x, y, 64)) / 4;
+				colour[1] = 220 + (turbulence(x, y, 64)) / 6;
 				fullImageHSV.at<Vec3b>(Point(x, y)) = colour;
 
-				if (y - top > 20 && bottom - y > 20)
+				if (y - top > 4 && bottom - y > 4)
 				{
 					cloudLayer[x][y] = 1;
 				}

@@ -18,10 +18,10 @@ struct Pos
 	int y;
 };
 
-#define noiseWidth 5115  
-#define noiseHeight 3061
+#define noiseWidth 10000  
+#define noiseHeight 10000
 
-double noise[noiseWidth][noiseHeight]; //the noise array
+double noise[noiseWidth][noiseHeight]; 
 
 double smoothNoise(double x, double y);
 double turbulence(double x, double y, double size);
@@ -41,6 +41,7 @@ Mat image, original;
 Vec3b sky;
 Vec3b cloud;
 
+//Function code taken from: http://lodev.org/cgtutor/randomnoise.html
 void generateNoise()
 {
 	for (int x = 0; x < noiseWidth; x++)
@@ -50,6 +51,7 @@ void generateNoise()
 		}
 }
 
+//Function code taken from: http://lodev.org/cgtutor/randomnoise.html
 double smoothNoise(double x, double y)
 {
 	//get fractional part of x and y
@@ -74,6 +76,7 @@ double smoothNoise(double x, double y)
 	return value;
 }
 
+//Function code taken from: http://lodev.org/cgtutor/randomnoise.html
 double turbulence(double x, double y, double size)
 {
 	double value = 0.0, initialSize = size;
@@ -99,6 +102,7 @@ void mouseClick(int event, int x, int y, int flags, void* userdata)
 			mode++;
 
 			cout << "Colour (BGR): " << (int)colour[0] << " " << (int)colour[1] << " " << (int)colour[2] << endl;
+			cout << "Please click on the lowest part of the sky." << endl;
 		}
 
 		else if (mode == 1)
@@ -107,6 +111,7 @@ void mouseClick(int event, int x, int y, int flags, void* userdata)
 			mode++;
 
 			cout << "Position (" << x << ", " << y << ")" << endl;
+			cout << "Please click on a cloud." << endl;
 		}
 
 		else if (mode == 2)
@@ -133,10 +138,19 @@ void mouseClick(int event, int x, int y, int flags, void* userdata)
 	}
 }
 
-int _tmain(int argc, _TCHAR* argv[])
+int main(int argc, char* argv[])
 {
 	mode = 0;
-	image = imread("E:\\Pictures\\DSCN4637.jpg");
+	
+	printf("Carrier image: %s\n", argv[1]);
+	FILE *hidden = fopen(argv[1], "rb");
+
+	if (hidden == 0)
+	{
+		return -2;
+	}
+
+	image = imread(argv[2]);
 
 	if (image.empty())
 	{
@@ -144,9 +158,8 @@ int _tmain(int argc, _TCHAR* argv[])
 		return -1;
 	}
 
-	namedWindow("Carrier", 1);
-	namedWindow("subImage", 1);
-	namedWindow("info", 1);
+	namedWindow("Carrier", CV_WINDOW_NORMAL);
+	cvSetWindowProperty("Carrier", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
 	imshow("Carrier", image);
 
 	setMouseCallback("Carrier", mouseClick, NULL);
@@ -449,9 +462,11 @@ int _tmain(int argc, _TCHAR* argv[])
 	}*/
 
 	imwrite("E:\\Pictures\\marine-field-sky-steg.jpg", fullImageHSV);
+	//namedWindow("subImage", 1);
+	//namedWindow("info", 1);
 	imshow("Carrier", fullImageHSV);
-	imshow("subImage", blurredImage);
-	imshow("info", subImage);
+	//imshow("subImage", blurredImage);
+	//imshow("info", subImage);
 	waitKey(0);
 
 	return 0;

@@ -5,6 +5,7 @@
 #include <iostream>
 #include <windows.h>
 #include <cstdint>
+#include <math.h>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -29,10 +30,16 @@ void generateNoise();
 
 const int MAXDISTANCE = 150;
 
+char *stegFile;
+
 int mode;
 int lowestSky;
 int distanceSky;
 int distanceCloud;
+int currentByte;
+int bitsLeft = 0;
+int stegPosition = 0;
+int fileSize = 0;
 
 struct Pos Pos1;
 struct Pos Pos2;
@@ -140,6 +147,20 @@ void mouseClick(int event, int x, int y, int flags, void* userdata)
 	}
 }
 
+int getBit()
+{
+	if (bitsLeft <= 0)
+	{
+		currentByte = stegFile[stegPosition];
+		stegPosition++;
+		bitsLeft = 8;
+	}
+
+	bitsLeft--;
+
+	return currentByte & (1 << bitsLeft);
+}
+
 int main(int argc, char* argv[])
 {
 	mode = 0;
@@ -151,6 +172,13 @@ int main(int argc, char* argv[])
 	{
 		return -2;
 	}
+
+	fseek(hidden, 0L, SEEK_END);
+	fileSize = ftell(hidden);
+	fseek(hidden, 0L, SEEK_SET);
+
+	stegFile = (char*)malloc(fileSize);
+	fread(stegFile, fileSize, 1, hidden);
 
 	image = imread(argv[2]);
 
@@ -342,7 +370,7 @@ int main(int argc, char* argv[])
 
 			else if (started)
 			{
-				if (rand() % 2)
+				if (getBit())
 				{
 					top++;
 				}
@@ -352,7 +380,7 @@ int main(int argc, char* argv[])
 					top--;
 				}
 
-				if (rand() % 2)
+				if (getBit())
 				{
 					bottom++;
 				}
@@ -473,6 +501,8 @@ int main(int argc, char* argv[])
 		imshow("Carrier", fullImageHSV);
 		//imshow("subImage", blurredImage);
 		//imshow("info", subImage);
+		cout << "Hid " << stegPosition - 1 << " bytes so far." << endl;
+
 		waitKey(0);
 		cvtColor(fullImageHSV, fullImageHSV, CV_BGR2HLS);
 	}

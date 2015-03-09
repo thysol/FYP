@@ -19,6 +19,12 @@ struct Pos
 	int y;
 };
 
+struct node 
+{
+	int value;
+	struct node *next;
+};
+
 #define noiseWidth 10000  
 #define noiseHeight 10000
 
@@ -149,6 +155,11 @@ void mouseClick(int event, int x, int y, int flags, void* userdata)
 
 int getBit()
 {
+	if (stegPosition >= fileSize)
+	{
+		return rand() % 2;
+	}
+
 	if (bitsLeft <= 0)
 	{
 		currentByte = stegFile[stegPosition];
@@ -187,6 +198,12 @@ int main(int argc, char* argv[])
 		cout << "Couldn't load image" << endl;
 		return -1;
 	}
+
+	struct node *root;
+	struct node *currentNode;
+	root = (struct node *) malloc(sizeof(struct node));
+	root->value = fileSize;
+	currentNode = root;
 
 	namedWindow("Carrier", CV_WINDOW_NORMAL);
 	//cvSetWindowProperty("Carrier", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
@@ -280,6 +297,31 @@ int main(int argc, char* argv[])
 
 	while (1)
 	{
+		struct node *nextNode;
+		nextNode = (struct node *) malloc(sizeof(struct node));
+		nextNode->value = Pos1.x;
+		nextNode->next = 0;
+		currentNode->next = nextNode;
+		currentNode = nextNode;
+
+		nextNode = (struct node *) malloc(sizeof(struct node));
+		nextNode->value = Pos1.y;
+		nextNode->next = 0;
+		currentNode->next = nextNode;
+		currentNode = nextNode;
+
+		nextNode = (struct node *) malloc(sizeof(struct node));
+		nextNode->value = Pos2.x;
+		nextNode->next = 0;
+		currentNode->next = nextNode;
+		currentNode = nextNode;
+
+		nextNode = (struct node *) malloc(sizeof(struct node));
+		nextNode->value = Pos2.y;
+		nextNode->next = 0;
+		currentNode->next = nextNode;
+		currentNode = nextNode;
+
 		int started = 0;
 		/*for (int x = Pos1.x; x < Pos2.x; x++)
 		{
@@ -502,6 +544,35 @@ int main(int argc, char* argv[])
 		//imshow("subImage", blurredImage);
 		//imshow("info", subImage);
 		cout << "Hid " << stegPosition - 1 << " bytes so far." << endl;
+		cout << "Key: " << fileSize;
+
+		struct node *currentNode = root;
+		
+		do
+		{
+			currentNode = currentNode->next;
+			cout << " " << currentNode->value;
+		} while (currentNode->next);
+
+		//Decoding
+
+		started = 0;
+
+		for (int x = Pos1.x; x < Pos2.x; x++)
+		{
+			for (int y = Pos1.y; y < Pos2.y; y++)
+			{
+				colour = fullImageHSV.at<Vec3b>(Point(x, y));
+
+				if (colour[1] >= 220 && !started)
+				{
+					started = 1;
+					int position = ((Pos2.y - Pos1.y) / 2) + Pos1.y;//(rand() % (Pos2.y - Pos1.y)) + Pos1.y;
+					top = position;
+					bottom = position;
+				}
+			}
+		}
 
 		waitKey(0);
 		cvtColor(fullImageHSV, fullImageHSV, CV_BGR2HLS);

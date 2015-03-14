@@ -53,6 +53,10 @@ struct Pos Pos2;
 Mat image, original;
 Vec3b sky;
 Vec3b cloud;
+Vec3b colourTop;
+Vec3b colourBottom;
+Vec3b previousColourTop;
+Vec3b previousColourBottom;
 
 //Function code taken from: http://lodev.org/cgtutor/randomnoise.html
 void generateNoise()
@@ -400,7 +404,7 @@ int main(int argc, char* argv[])
 				//fullImageHSV.at<Vec3b>(Point(x, y)) = colour;
 			}
 
-			if (rand() % 2 && !started)
+			if (!started)
 			{
 				started = 1;
 				int position = ((Pos2.y - Pos1.y) / 2) + Pos1.y;//(rand() % (Pos2.y - Pos1.y)) + Pos1.y;
@@ -412,65 +416,71 @@ int main(int argc, char* argv[])
 
 			else if (started)
 			{
-				if (getBit())
-				{
-					top++;
-				}
-
-				else
-				{
-					top--;
-				}
-
-				if (getBit())
-				{
-					bottom++;
-				}
-
-				else
-				{
-					bottom--;
-				}
-
 				if (top + 20 >= bottom && !end)
 				{
-					if (rand() % 2)
-					{
-						top--;
-						bottom++;
-					}
+					top--;
+					bottom++;
+
+					cout << "Not wide enough!";
 				}
 
 				if (top - 5 < Pos1.y)
 				{
 					top = Pos1.y + 5;
+
+					cout << "Too close to top border!";
 				}
 
 				if (bottom + 5 > Pos2.y)
 				{
 					bottom = Pos2.y - 5;
+
+					cout << "Too close to bottom border";
 				}
 
 				if (Pos2.x - x < (bottom - top) * 2)
 				{
 					end = 1;
+					cout << "End started!";
 				}
 
 				if (end)
 				{
-					if (rand() % 2)
-					{
-						top++;
-						bottom--;
-					}
+					top++;
+					bottom--;
+
+					cout << "Ending this";
 				}
 
 				if (bottom <= top && Pos2.x - x < 10)
 				{
 					stop = 1;
+					cout << "Ended!";
 				}
 
-				cout << bottom - top << endl;
+				if (getBit())
+				{
+					top++;
+					cout << "1";
+				}
+
+				else
+				{
+					top--;
+					cout << "0";
+				}
+
+				if (getBit())
+				{
+					bottom++;
+					cout << "1";
+				}
+
+				else
+				{
+					bottom--;
+					cout << "0";
+				}
 
 				for (int y = top; y < bottom; y++)
 				{
@@ -506,7 +516,7 @@ int main(int argc, char* argv[])
 		{
 			for (int y = Pos1.y; y < Pos2.y; y++)
 			{
-				if (cloudLayer[x][y] == 1)
+				if (1)//cloudLayer[x][y] == 1)
 				{
 					//cout << "Using original";
 					fullImageHSV.at<Vec3b>(Point(x, y)) = subImage.at<Vec3b>(Point(x - Pos1.x, y - Pos1.y));
@@ -556,21 +566,106 @@ int main(int argc, char* argv[])
 
 		//Decoding
 
+		cout << endl;
+
 		started = 0;
+		stop = 0;
+		int previousTop = 0;
+		int previousBottom = 0;
+		int top = 0;
+		int bottom = 0;
+		end = 0;
 
-		for (int x = Pos1.x; x < Pos2.x; x++)
+		for (int x = Pos1.x; x < Pos2.x && !stop; x++)
 		{
-			for (int y = Pos1.y; y < Pos2.y; y++)
+			if (!started)
 			{
-				colour = fullImageHSV.at<Vec3b>(Point(x, y));
+				started = 1;
+				int position = ((Pos2.y - Pos1.y) / 2) + Pos1.y;//(rand() % (Pos2.y - Pos1.y)) + Pos1.y;
+				top = position;
+				bottom = position;
+				previousTop = top;
+				previousBottom = bottom;
 
-				if (colour[1] >= 220 && !started)
+				previousColourTop = fullImageHSV.at<Vec3b>(Point(x, top));
+				previousColourBottom = fullImageHSV.at<Vec3b>(Point(x, bottom));
+			}
+
+			else if (started)
+			{
+				if (top + 20 >= bottom && !end)
 				{
-					started = 1;
-					int position = ((Pos2.y - Pos1.y) / 2) + Pos1.y;//(rand() % (Pos2.y - Pos1.y)) + Pos1.y;
-					top = position;
-					bottom = position;
+					top--;
+					bottom++;
+
+					cout << "Not wide enough!";
 				}
+
+				if (top - 5 < Pos1.y)
+				{
+					top = Pos1.y + 5;
+
+					cout << "Too close to top border!";
+				}
+
+				if (bottom + 5 > Pos2.y)
+				{
+					bottom = Pos2.y - 5;
+
+					cout << "Too close to bottom border";
+				}
+
+				if (Pos2.x - x < (bottom - top) * 2)
+				{
+					end = 1;
+					cout << "End started!";
+				}
+
+				if (end)
+				{
+					top++;
+					bottom--;
+
+					cout << "Ending this";
+				}
+
+				if (bottom <= top && Pos2.x - x < 10)
+				{
+					stop = 1;
+					cout << "Ended!";
+				}
+
+				colourTop = fullImageHSV.at<Vec3b>(Point(x, top));
+				//cout << "ColourTop[1]: " << (int)colourTop[1] << " 220 + (turbulence(x, top, 64)) / 6): " << (int)(220 + (turbulence(x, top, 64)) / 6) << " ";
+				if (((int)(colourTop[1])) == ((int)(220 + (turbulence(x, top, 64)) / 6)))
+				{
+					top--;
+					cout << "0";
+				}
+
+				else
+				{
+					top++;
+					cout << "1";
+				}
+
+				//cout << endl << "Bottom: " << bottom << endl;
+				colourBottom = fullImageHSV.at<Vec3b>(Point(x, bottom));
+
+				if (((int)(colourBottom[1])) == ((int)(220 + (turbulence(x, bottom, 64)) / 6)))
+				{
+					bottom++;
+					cout << "1";
+				}
+
+				else
+				{
+					bottom--;
+					cout << "0";
+				}
+
+				previousColourTop = fullImageHSV.at<Vec3b>(Point(x, top));
+				previousColourBottom = fullImageHSV.at<Vec3b>(Point(x, bottom));
 			}
 		}
 

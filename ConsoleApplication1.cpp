@@ -39,12 +39,15 @@ const int MAXDISTANCE = 150;
 char *stegFile;
 
 int mode;
+int temp;
 int lowestSky;
 int distanceSky;
 int distanceCloud;
 int currentByte;
 int bitsLeft = 0;
+int bitsLeftBackup = 0;
 int stegPosition = 0;
+int stegPositionBackup = 0;
 int fileSize = 0;
 
 struct Pos Pos1;
@@ -301,6 +304,14 @@ int main(int argc, char* argv[])
 
 	while (1)
 	{
+		for (int i = 0; i < image.cols; i++)
+		{
+			for (int j = 0; j < image.rows; j++)
+			{
+				cloudLayer[i][j] = 0;
+			}
+		}
+
 		struct node *nextNode;
 		nextNode = (struct node *) malloc(sizeof(struct node));
 		nextNode->value = Pos1.x;
@@ -421,27 +432,27 @@ int main(int argc, char* argv[])
 					top--;
 					bottom++;
 
-					cout << "Not wide enough!";
+					//cout << "Not wide enough!";
 				}
 
 				if (top - 5 < Pos1.y)
 				{
 					top = Pos1.y + 5;
 
-					cout << "Too close to top border!";
+					//cout << "Too close to top border!";
 				}
 
 				if (bottom + 5 > Pos2.y)
 				{
 					bottom = Pos2.y - 5;
 
-					cout << "Too close to bottom border";
+					//cout << "Too close to bottom border";
 				}
 
 				if (Pos2.x - x < (bottom - top) * 2)
 				{
 					end = 1;
-					cout << "End started!";
+					//cout << "End started!";
 				}
 
 				if (end)
@@ -449,13 +460,13 @@ int main(int argc, char* argv[])
 					top++;
 					bottom--;
 
-					cout << "Ending this";
+					//cout << "Ending this";
 				}
 
-				if (bottom <= top && Pos2.x - x < 10)
+				if (bottom <= top)
 				{
 					stop = 1;
-					cout << "Ended!";
+					//cout << "Ended!";
 				}
 
 				/*cout << "x: " << x << " top: " << top << " ";
@@ -485,7 +496,7 @@ int main(int argc, char* argv[])
 					cout << "0";
 				}
 
-				for (int y = top; y < bottom; y++)
+				for (int y = top - 2; y < bottom + 2; y++)
 				{
 					colour[2] = 0;
 					colour[1] = 220 + (turbulence(x, y, 64)) / 6;
@@ -511,6 +522,8 @@ int main(int argc, char* argv[])
 					colour[1] = (220 + (turbulence(x, y, 64)) / 6) + 1;
 					fullImageHSV.at<Vec3b>(Point(x, y)) = colour;
 				}*/
+
+				//cout << "Top: " << top << " ";
 			}
 		}
 
@@ -565,10 +578,8 @@ int main(int argc, char* argv[])
 		pset(x, y, color);
 		}*/
 
-		imwrite("E:\\Pictures\\marine-field-sky-steg.jpg", fullImageHSV);
 		//namedWindow("subImage", 1);
 		//namedWindow("info", 1);
-		imshow("Carrier", fullImageHSV);
 		//imshow("subImage", blurredImage);
 		//imshow("info", subImage);
 		cout << "Hid " << stegPosition - 1 << " bytes so far." << endl;
@@ -582,17 +593,26 @@ int main(int argc, char* argv[])
 			cout << " " << currentNode->value;
 		} while (currentNode->next);
 
-		//Correction
+		int previousTop = 0;
+		int previousBottom = 0;
 
-		stegPosition = 0;
-		bitsLeft = 0;
+		//Correction
+		temp = stegPositionBackup;
+		stegPositionBackup = stegPosition;
+		stegPosition = temp;
+
+		temp = bitsLeftBackup;
+		bitsLeftBackup = bitsLeft;
+		bitsLeft = temp;
 
 		cout << endl;
+		cout << endl;
+
+		//cout << "Pos1.x: " << Pos1.x << endl;
+		//cout << "Pos2.x: " << Pos2.x << endl;
 
 		started = 0;
 		stop = 0;
-		int previousTop = 0;
-		int previousBottom = 0;
 		int top = 0;
 		int bottom = 0;
 		end = 0;
@@ -619,27 +639,27 @@ int main(int argc, char* argv[])
 					top--;
 					bottom++;
 
-					cout << "Not wide enough!";
+					//cout << "Not wide enough!";
 				}
 
 				if (top - 5 < Pos1.y)
 				{
 					top = Pos1.y + 5;
 
-					cout << "Too close to top border!";
+					//cout << "Too close to top border!";
 				}
 
 				if (bottom + 5 > Pos2.y)
 				{
 					bottom = Pos2.y - 5;
 
-					cout << "Too close to bottom border";
+					//cout << "Too close to bottom border";
 				}
 
 				if (Pos2.x - x < (bottom - top) * 2)
 				{
 					end = 1;
-					cout << "End started!";
+					//cout << "End started!";
 				}
 
 				if (end)
@@ -647,19 +667,20 @@ int main(int argc, char* argv[])
 					top++;
 					bottom--;
 
-					cout << "Ending this";
+					//cout << "Ending this";
 				}
 
-				if (bottom <= top && Pos2.x - x < 10)
+				if (bottom <= top)
 				{
 					stop = 1;
-					cout << "Ended!";
+					//cout << "Ended!";
 				}
 
 				colourTop = fullImageHSV.at<Vec3b>(Point(x, top));
-				/*cout << "x: " << x << " top: " << top << " ";
-				cout << "ColourTop: " << (int)colourTop[1] << " ";
-				cout << " Turbulence: " << ((int)(220 + (turbulence(x, top, 64)) / 6)) << " ";*/
+				//cout << "Top: " << top << " ";
+				//cout << "x: " << x << " top: " << top << " ";
+				//cout << "ColourTop: " << (int)colourTop[1] << " ";
+				//cout << " Turbulence: " << ((int)(220 + (turbulence(x, top, 64)) / 6)) << " ";
 				//cout << "ColourTop[1]: " << (int)colourTop[1] << " 220 + (turbulence(x, top, 64)) / 6): " << (int)(220 + (turbulence(x, top, 64)) / 6) << " ";
 
 				if (getBit())
@@ -678,7 +699,7 @@ int main(int argc, char* argv[])
 					top--;
 					cout << "0";
 				}
-
+				
 				//cout << endl << "Bottom: " << bottom << endl;
 				colourBottom = fullImageHSV.at<Vec3b>(Point(x, bottom));
 
@@ -706,7 +727,7 @@ int main(int argc, char* argv[])
 				previousColourBottom = fullImageHSV.at<Vec3b>(Point(x, bottom));
 			}
 		}
-
+		
 		//Decoding
 
 		cout << endl;
@@ -742,27 +763,27 @@ int main(int argc, char* argv[])
 					top--;
 					bottom++;
 
-					cout << "Not wide enough!";
+					//cout << "Not wide enough!";
 				}
 
 				if (top - 5 < Pos1.y)
 				{
 					top = Pos1.y + 5;
 
-					cout << "Too close to top border!";
+					//cout << "Too close to top border!";
 				}
 
 				if (bottom + 5 > Pos2.y)
 				{
 					bottom = Pos2.y - 5;
 
-					cout << "Too close to bottom border";
+					//cout << "Too close to bottom border";
 				}
 
 				if (Pos2.x - x < (bottom - top) * 2)
 				{
 					end = 1;
-					cout << "End started!";
+					//cout << "End started!";
 				}
 
 				if (end)
@@ -770,20 +791,20 @@ int main(int argc, char* argv[])
 					top++;
 					bottom--;
 
-					cout << "Ending this";
+					//cout << "Ending this";
 				}
 
-				if (bottom <= top && Pos2.x - x < 10)
+				if (bottom <= top)
 				{
 					stop = 1;
-					cout << "Ended!";
+					//cout << "Ended!";
 				}
 
 				colourTop = fullImageHSV.at<Vec3b>(Point(x, top));
-				/*cout << "x: " << x << " top: " << top << " ";
-				cout << "ColourTop: " << (int)colourTop[1] << " ";
-				cout << " Turbulence: " << ((int)(220 + (turbulence(x, top, 64)) / 6)) << " ";
-				*/
+				//cout << "x: " << x << " top: " << top << " ";
+				//cout << "ColourTop: " << (int)colourTop[1] << " ";
+				//cout << " Turbulence: " << ((int)(220 + (turbulence(x, top, 64)) / 6)) << " ";
+				
 				if (((int)(colourTop[1])) == ((int)(220 + (turbulence(x, top, 64)) / 6)))
 				{
 					top--;
@@ -815,7 +836,9 @@ int main(int argc, char* argv[])
 				previousColourBottom = fullImageHSV.at<Vec3b>(Point(x, bottom));
 			}
 		}
-
+		
+		imwrite("E:\\Pictures\\marine-field-sky-steg.jpg", fullImageHSV);
+		imshow("Carrier", fullImageHSV);
 		waitKey(0);
 		cvtColor(fullImageHSV, fullImageHSV, CV_BGR2HLS);
 	}

@@ -179,6 +179,19 @@ int getBit()
 	return currentByte & (1 << bitsLeft);
 }
 
+void reloadByte()
+{
+	if (stegPosition > 0)
+	{
+		currentByte = stegFile[stegPosition - 1];
+	}
+
+	else
+	{
+		currentByte = stegFile[stegPosition];
+	}
+}
+
 int main(int argc, char* argv[])
 {
 	mode = 0;
@@ -304,6 +317,9 @@ int main(int argc, char* argv[])
 
 	while (1)
 	{
+		cout << "bitsLeft: " << bitsLeft << " ";
+		cout << "Stegposition: " << stegPosition << " ";
+
 		for (int i = 0; i < image.cols; i++)
 		{
 			for (int j = 0; j < image.rows; j++)
@@ -604,9 +620,12 @@ int main(int argc, char* argv[])
 		temp = bitsLeftBackup;
 		bitsLeftBackup = bitsLeft;
 		bitsLeft = temp;
+		reloadByte();
 
 		cout << endl;
 		cout << endl;
+		cout << "bitsLeft: " << bitsLeft << " ";
+		cout << "Stegposition: " << stegPosition << " ";
 
 		//cout << "Pos1.x: " << Pos1.x << endl;
 		//cout << "Pos2.x: " << Pos2.x << endl;
@@ -693,6 +712,7 @@ int main(int argc, char* argv[])
 
 				else
 				{
+					//cout << " Turbulence: " << ((int)(220 + (turbulence(x, top, 64)) / 6)) << " ";
 					colourTop[1] = ((int)(220 + (turbulence(x, top, 64)) / 6));
 					fullImageHSV.at<Vec3b>(Point(x, top)) = colourTop;
 
@@ -732,6 +752,8 @@ int main(int argc, char* argv[])
 
 		cout << endl;
 		cout << endl;
+		cout << "bitsLeft: " << bitsLeft << " ";
+		cout << "Stegposition: " << stegPosition << " ";
 
 		started = 0;
 		stop = 0;
@@ -836,7 +858,25 @@ int main(int argc, char* argv[])
 				previousColourBottom = fullImageHSV.at<Vec3b>(Point(x, bottom));
 			}
 		}
+
+		if (bitsLeft <= 5)
+		{
+			bitsLeft += 2;
+			bitsLeftBackup = bitsLeft;
+		}
+
+		else
+		{
+			stegPosition--;
+			stegPositionBackup = stegPosition;
+
+			bitsLeft = -5 + bitsLeft;
+			bitsLeftBackup = bitsLeft;
+			reloadByte();
+		}
 		
+		cout << "Bits left: " << bitsLeft;
+
 		imwrite("E:\\Pictures\\marine-field-sky-steg.jpg", fullImageHSV);
 		imshow("Carrier", fullImageHSV);
 		waitKey(0);

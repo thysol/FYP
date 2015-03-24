@@ -46,14 +46,25 @@ int distanceCloud;
 int currentByte;
 int bitsLeft = 0;
 int bitsLeftBackup = 0;
+int previousBitsLeft = 0;
 int stegPosition = 0;
 int stegPositionBackup = 0;
+int previousStegPosition = 0;
 int fileSize = 0;
+int distanceFromEdge;
+int finalDistance;
+int top, bottom;
+
+char **cloudLayer;
 
 struct Pos Pos1;
 struct Pos Pos2;
 
-Mat image, original;
+Mat image;
+Mat original;
+Mat fullImageHSV;
+Mat previousFullImageHSV;
+
 Vec3b sky;
 Vec3b cloud;
 Vec3b colourTop;
@@ -110,6 +121,29 @@ double turbulence(double x, double y, double size)
 	return(128.0 * value / initialSize);
 }
 
+void reloadByte()
+{
+	if (stegPosition > 0)
+	{
+		currentByte = stegFile[stegPosition - 1];
+	}
+
+	else
+	{
+		currentByte = stegFile[stegPosition];
+	}
+}
+
+void removeLastCloud()
+{
+	bitsLeft = previousBitsLeft;
+	stegPosition = previousStegPosition;
+	reloadByte();
+
+	fullImageHSV = previousFullImageHSV.clone();
+	cvtColor(fullImageHSV, fullImageHSV, CV_HLS2BGR);
+}
+
 void mouseClick(int event, int x, int y, int flags, void* userdata)
 {
 	if (event == EVENT_LBUTTONDOWN)
@@ -158,6 +192,11 @@ void mouseClick(int event, int x, int y, int flags, void* userdata)
 			mode++;
 		}
 	}
+
+	else if (event == EVENT_RBUTTONDOWN)
+	{
+		removeLastCloud();
+	}
 }
 
 int getBit()
@@ -177,19 +216,6 @@ int getBit()
 	bitsLeft--;
 
 	return currentByte & (1 << bitsLeft);
-}
-
-void reloadByte()
-{
-	if (stegPosition > 0)
-	{
-		currentByte = stegFile[stegPosition - 1];
-	}
-
-	else
-	{
-		currentByte = stegFile[stegPosition];
-	}
 }
 
 int main(int argc, char* argv[])
@@ -286,12 +312,6 @@ int main(int argc, char* argv[])
 	imshow("Carrier", image);
 	waitKey(0);
 
-	Mat fullImageHSV;
-	int distanceFromEdge;
-	int finalDistance;
-	int top, bottom;
-	char **cloudLayer;
-
 	if ((cloudLayer = (char**)malloc(image.cols*sizeof(char*))) == NULL)
 	{
 		cout << "Something went wrong";
@@ -319,6 +339,10 @@ int main(int argc, char* argv[])
 	{
 		cout << "bitsLeft: " << bitsLeft << " ";
 		cout << "Stegposition: " << stegPosition << " ";
+
+		previousBitsLeft = bitsLeft;
+		previousStegPosition = stegPosition;
+		previousFullImageHSV = fullImageHSV.clone();
 
 		for (int i = 0; i < image.cols; i++)
 		{
@@ -598,6 +622,7 @@ int main(int argc, char* argv[])
 		//namedWindow("info", 1);
 		//imshow("subImage", blurredImage);
 		//imshow("info", subImage);
+		cvtColor(fullImageHSV, fullImageHSV, CV_BGR2HLS);
 		cout << "Hid " << stegPosition - 1 << " bytes so far." << endl;
 		cout << "Key: " << fileSize;
 
@@ -876,7 +901,7 @@ int main(int argc, char* argv[])
 		}
 		
 		cout << "Bits left: " << bitsLeft;
-
+		cvtColor(fullImageHSV, fullImageHSV, CV_HLS2BGR);
 		imwrite("E:\\Pictures\\marine-field-sky-steg.jpg", fullImageHSV);
 		imshow("Carrier", fullImageHSV);
 		waitKey(0);

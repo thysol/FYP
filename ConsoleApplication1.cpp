@@ -35,6 +35,9 @@ double turbulence(double x, double y, double size);
 void generateNoise();
 
 const int MAXDISTANCE = 150;
+const int MINBORDER = 20;
+const int MAXBLURDISTANCE = 11;
+const int MAXVERTICALCORRECTION = 4;
 
 char *stegFile;
 
@@ -455,7 +458,7 @@ int main(int argc, char* argv[])
 				//fullImageHSV.at<Vec3b>(Point(x, y)) = colour;
 			}
 
-			if (!started)
+			if (!started && x - Pos1.x > MINBORDER)
 			{
 				started = 1;
 				int position = ((Pos2.y - Pos1.y) / 2) + Pos1.y;//(rand() % (Pos2.y - Pos1.y)) + Pos1.y;
@@ -536,11 +539,18 @@ int main(int argc, char* argv[])
 					cout << "0";
 				}
 
-				for (int y = top - 2; y < bottom + 2; y++)
+				for (int y = top - 4; y < bottom + 4; y++)
 				{
 					colour[2] = 0;
 					colour[1] = 220 + (turbulence(x, y, 64)) / 6;
 					fullImageHSV.at<Vec3b>(Point(x, y)) = colour;
+
+					for (int vertical = x - MAXVERTICALCORRECTION; vertical < x + MAXVERTICALCORRECTION; vertical++)
+					{
+						colour[2] = 0;
+						colour[1] = 220 + (turbulence(vertical, y, 64)) / 6;
+						fullImageHSV.at<Vec3b>(Point(vertical, y)) = colour;
+					}
 
 					if (y - top > 4 && bottom - y > 4)
 					{
@@ -576,24 +586,85 @@ int main(int argc, char* argv[])
 		bottomRight.y = Pos2.y;
 
 		Rect region(topLeft, bottomRight);
+
+		topLeft.x = Pos1.x - 20;
+		topLeft.y = Pos1.y - 20;
+
+		bottomRight.x = Pos2.x + 20;
+		bottomRight.y = Pos2.y + 20;
+
+		Rect secondRegion(topLeft, bottomRight);
+
 		cvtColor(fullImageHSV, fullImageHSV, CV_HLS2BGR);
 		Mat subImage = fullImageHSV(region).clone();
 		Mat blurredImage;
 
 		//blur(subImage, blurredImage, Size(7, 7), Point(-1, -1));
 		GaussianBlur(subImage, blurredImage, Size(11, 11), 0, 0);
+		GaussianBlur(blurredImage, blurredImage, Size(11, 11), 0, 0);
 
 		for (int x = Pos1.x; x < Pos2.x; x++)
 		{
 			for (int y = Pos1.y; y < Pos2.y; y++)
 			{
+				int cloudTop = 0;
+				colour = fullImageHSV.at<Vec3b>(Point(x, y));
+
+				for (int verticalTest = x - MAXBLURDISTANCE; verticalTest < x + MAXBLURDISTANCE; verticalTest++)
+				{
+					for (int test = y; test < y + MAXBLURDISTANCE; test++)
+					{
+						if (cloudLayer[verticalTest][test] == 1)
+						{
+							cloudTop = 1;
+							break;
+						}
+					}
+				}
+
+				int cloudBottom = 0;
+
+				for (int verticalTest = x - MAXBLURDISTANCE; verticalTest < x + MAXBLURDISTANCE; verticalTest++)
+				{
+					for (int test = y; test > y - MAXBLURDISTANCE; test--)
+					{
+						if (cloudLayer[verticalTest][test] == 1)
+						{
+							cloudBottom = 1;
+							break;
+						}
+					}
+				}
+
+				int cloudLeft = 0;
+
+				for (int test = x; test < x + MAXBLURDISTANCE; test++)
+				{
+					if (cloudLayer[test][y] == 1)
+					{
+						cloudLeft = 1;
+						break;
+					}
+				}
+
+				int cloudRight = 0;
+
+				for (int test = x; test > x - MAXBLURDISTANCE; test--)
+				{
+					if (cloudLayer[test][y] == 1)
+					{
+						cloudRight = 1;
+						break;
+					}
+				}
+
 				if (cloudLayer[x][y] == 1)
 				{
 					//cout << "Using original";
 					fullImageHSV.at<Vec3b>(Point(x, y)) = subImage.at<Vec3b>(Point(x - Pos1.x, y - Pos1.y));
 				}
 
-				else
+				else if (cloudTop || cloudBottom || cloudLeft || cloudRight)
 				{
 					//cout << "Using blurred version" << endl;
 					fullImageHSV.at<Vec3b>(Point(x, y)) = blurredImage.at<Vec3b>(Point(x - Pos1.x, y - Pos1.y));
@@ -601,6 +672,29 @@ int main(int argc, char* argv[])
 			}
 		}
 
+		//GaussianBlur(fullImageHSV, fullImageHSV, Size(3, 3), 0, 0);
+
+		/*Mat secondSubImage = fullImageHSV(secondRegion).clone();
+		GaussianBlur(secondSubImage, blurredImage, Size(1, 1), 0, 0);
+
+		for (int x = topLeft.x; x < bottomRight.x; x++)
+		{
+			for (int y = topLeft.y; y < bottomRight.y; y++)
+			{
+				if (cloudLayer[x][y] == 1)
+				{
+					//cout << "Using original";
+					fullImageHSV.at<Vec3b>(Point(x, y)) = secondSubImage.at<Vec3b>(Point(x - topLeft.x, y - topLeft.y));
+				}
+
+				else
+				{
+					//cout << "Using blurred version" << endl;
+					fullImageHSV.at<Vec3b>(Point(x, y)) = blurredImage.at<Vec3b>(Point(x - topLeft.x, y - topLeft.y));
+				}
+			}
+		}
+		*/
 		//blur(subImage, blurredImage, Size(7, 7), Point(-1, -1));
 		GaussianBlur(subImage, blurredImage, Size(11, 11), 0, 0);
 
@@ -638,6 +732,7 @@ int main(int argc, char* argv[])
 		int previousBottom = 0;
 
 		//Correction
+		
 		temp = stegPositionBackup;
 		stegPositionBackup = stegPosition;
 		stegPosition = temp;
@@ -663,7 +758,7 @@ int main(int argc, char* argv[])
 
 		for (int x = Pos1.x; x < Pos2.x && !stop; x++)
 		{
-			if (!started)
+			if (!started && x - Pos1.x > MINBORDER)
 			{
 				started = 1;
 				int position = ((Pos2.y - Pos1.y) / 2) + Pos1.y;//(rand() % (Pos2.y - Pos1.y)) + Pos1.y;
@@ -758,11 +853,15 @@ int main(int argc, char* argv[])
 
 				else
 				{
-					if (colourBottom[1] == ((int)(220 + (turbulence(x, bottom, 64)) / 6)))
+					/*if (colourBottom[1] == ((int)(220 + (turbulence(x, bottom, 64)) / 6)))
 					{
 						colourBottom[1] = ((int)(220 + (turbulence(x, bottom, 64)) / 6)) - 1;
 						fullImageHSV.at<Vec3b>(Point(x, bottom)) = colourBottom;
 					}
+					*/
+
+					colourBottom[1] = ((int)(220 + (turbulence(x, bottom, 64)) / 6)) - 1;
+					fullImageHSV.at<Vec3b>(Point(x, bottom)) = colourBottom;
 
 					bottom--;
 					cout << "0";
@@ -790,7 +889,7 @@ int main(int argc, char* argv[])
 
 		for (int x = Pos1.x; x < Pos2.x && !stop; x++)
 		{
-			if (!started)
+			if (!started && x - Pos1.x > MINBORDER)
 			{
 				started = 1;
 				int position = ((Pos2.y - Pos1.y) / 2) + Pos1.y;//(rand() % (Pos2.y - Pos1.y)) + Pos1.y;

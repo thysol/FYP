@@ -141,6 +141,8 @@ void removeLastCloud()
 {
 	bitsLeft = previousBitsLeft;
 	stegPosition = previousStegPosition;
+	bitsLeftBackup = bitsLeft;
+	stegPositionBackup = stegPosition;
 	reloadByte();
 
 	fullImageHSV = previousFullImageHSV.clone();

@@ -19,7 +19,7 @@ struct Pos
 	int y;
 };
 
-struct node 
+struct node
 {
 	int value;
 	struct node *next;
@@ -28,7 +28,7 @@ struct node
 #define noiseWidth 10000  
 #define noiseHeight 10000
 
-double noise[noiseWidth][noiseHeight]; 
+double noise[noiseWidth][noiseHeight];
 
 double smoothNoise(double x, double y);
 double turbulence(double x, double y, double size);
@@ -38,6 +38,7 @@ const int MAXDISTANCE = 150;
 const int MINBORDER = 20;
 const int MAXBLURDISTANCE = 11;
 const int MAXVERTICALCORRECTION = 4;
+const int BASECOLOUR = 165;
 
 char *stegFile;
 
@@ -226,7 +227,7 @@ int getBit()
 int main(int argc, char* argv[])
 {
 	mode = 0;
-	
+
 	printf("Carrier image: %s\n", argv[1]);
 	FILE *hidden = fopen(argv[1], "rb");
 
@@ -544,13 +545,13 @@ int main(int argc, char* argv[])
 				for (int y = top - 4; y < bottom + 4; y++)
 				{
 					colour[2] = 0;
-					colour[1] = 220 + (turbulence(x, y, 64)) / 6;
+					colour[1] = BASECOLOUR + (turbulence(x, y, 64)) / 6;
 					fullImageHSV.at<Vec3b>(Point(x, y)) = colour;
 
 					for (int vertical = x - MAXVERTICALCORRECTION; vertical < x + MAXVERTICALCORRECTION; vertical++)
 					{
 						colour[2] = 0;
-						colour[1] = 220 + (turbulence(vertical, y, 64)) / 6;
+						colour[1] = BASECOLOUR + (turbulence(vertical, y, 64)) / 6;
 						fullImageHSV.at<Vec3b>(Point(vertical, y)) = colour;
 					}
 
@@ -569,13 +570,20 @@ int main(int argc, char* argv[])
 
 				for (int y = top - 10; y < top; y++)
 				{
-					colour = fullImageHSV.at<Vec3b>(Point(x, y));
-					colour[2] = 0;
-					colour[1] = (220 + (turbulence(x, y, 64)) / 6) + 1;
-					fullImageHSV.at<Vec3b>(Point(x, y)) = colour;
+				colour = fullImageHSV.at<Vec3b>(Point(x, y));
+				colour[2] = 0;
+				colour[1] = (BASECOLOUR + (turbulence(x, y, 64)) / 6) + 1;
+				fullImageHSV.at<Vec3b>(Point(x, y)) = colour;
 				}*/
 
 				//cout << "Top: " << top << " ";
+			}
+
+			if (x == Pos1.x + 70)
+			{
+				cvtColor(fullImageHSV, fullImageHSV, CV_HLS2BGR);
+				imwrite("E:\\Pictures\\steg-crude-halfway.png", fullImageHSV);
+				cvtColor(fullImageHSV, fullImageHSV, CV_BGR2HLS);
 			}
 		}
 
@@ -598,6 +606,7 @@ int main(int argc, char* argv[])
 		Rect secondRegion(topLeft, bottomRight);
 
 		cvtColor(fullImageHSV, fullImageHSV, CV_HLS2BGR);
+		imwrite("E:\\Pictures\\steg-crude.png", fullImageHSV);
 		Mat subImage = fullImageHSV(region).clone();
 		Mat blurredImage;
 
@@ -681,20 +690,20 @@ int main(int argc, char* argv[])
 
 		for (int x = topLeft.x; x < bottomRight.x; x++)
 		{
-			for (int y = topLeft.y; y < bottomRight.y; y++)
-			{
-				if (cloudLayer[x][y] == 1)
-				{
-					//cout << "Using original";
-					fullImageHSV.at<Vec3b>(Point(x, y)) = secondSubImage.at<Vec3b>(Point(x - topLeft.x, y - topLeft.y));
-				}
+		for (int y = topLeft.y; y < bottomRight.y; y++)
+		{
+		if (cloudLayer[x][y] == 1)
+		{
+		//cout << "Using original";
+		fullImageHSV.at<Vec3b>(Point(x, y)) = secondSubImage.at<Vec3b>(Point(x - topLeft.x, y - topLeft.y));
+		}
 
-				else
-				{
-					//cout << "Using blurred version" << endl;
-					fullImageHSV.at<Vec3b>(Point(x, y)) = blurredImage.at<Vec3b>(Point(x - topLeft.x, y - topLeft.y));
-				}
-			}
+		else
+		{
+		//cout << "Using blurred version" << endl;
+		fullImageHSV.at<Vec3b>(Point(x, y)) = blurredImage.at<Vec3b>(Point(x - topLeft.x, y - topLeft.y));
+		}
+		}
 		}
 		*/
 		//blur(subImage, blurredImage, Size(7, 7), Point(-1, -1));
@@ -718,12 +727,13 @@ int main(int argc, char* argv[])
 		//namedWindow("info", 1);
 		//imshow("subImage", blurredImage);
 		//imshow("info", subImage);
+		imwrite("E:\\Pictures\\steg-blur.png", fullImageHSV);
 		cvtColor(fullImageHSV, fullImageHSV, CV_BGR2HLS);
 		cout << "Hid " << stegPosition - 1 << " bytes so far." << endl;
 		cout << "Key: " << fileSize;
 
 		struct node *currentNode = root;
-		
+
 		do
 		{
 			currentNode = currentNode->next;
@@ -734,7 +744,7 @@ int main(int argc, char* argv[])
 		int previousBottom = 0;
 
 		//Correction
-		
+
 		temp = stegPositionBackup;
 		stegPositionBackup = stegPosition;
 		stegPosition = temp;
@@ -821,12 +831,12 @@ int main(int argc, char* argv[])
 				//cout << "Top: " << top << " ";
 				//cout << "x: " << x << " top: " << top << " ";
 				//cout << "ColourTop: " << (int)colourTop[1] << " ";
-				//cout << " Turbulence: " << ((int)(220 + (turbulence(x, top, 64)) / 6)) << " ";
-				//cout << "ColourTop[1]: " << (int)colourTop[1] << " 220 + (turbulence(x, top, 64)) / 6): " << (int)(220 + (turbulence(x, top, 64)) / 6) << " ";
+				//cout << " Turbulence: " << ((int)(BASECOLOUR + (turbulence(x, top, 64)) / 6)) << " ";
+				//cout << "ColourTop[1]: " << (int)colourTop[1] << " BASECOLOUR + (turbulence(x, top, 64)) / 6): " << (int)(BASECOLOUR + (turbulence(x, top, 64)) / 6) << " ";
 
 				if (getBit())
 				{
-					colourTop[1] = ((int)(220 + (turbulence(x, top, 64)) / 6)) - 1;
+					colourTop[1] = ((int)(BASECOLOUR + (turbulence(x, top, 64)) / 6)) - 1;
 					fullImageHSV.at<Vec3b>(Point(x, top)) = colourTop;
 					top++;
 					cout << "1";
@@ -834,20 +844,20 @@ int main(int argc, char* argv[])
 
 				else
 				{
-					//cout << " Turbulence: " << ((int)(220 + (turbulence(x, top, 64)) / 6)) << " ";
-					colourTop[1] = ((int)(220 + (turbulence(x, top, 64)) / 6));
+					//cout << " Turbulence: " << ((int)(BASECOLOUR + (turbulence(x, top, 64)) / 6)) << " ";
+					colourTop[1] = ((int)(BASECOLOUR + (turbulence(x, top, 64)) / 6));
 					fullImageHSV.at<Vec3b>(Point(x, top)) = colourTop;
 
 					top--;
 					cout << "0";
 				}
-				
+
 				//cout << endl << "Bottom: " << bottom << endl;
 				colourBottom = fullImageHSV.at<Vec3b>(Point(x, bottom));
 
 				if (getBit())
 				{
-					colourBottom[1] = ((int)(220 + (turbulence(x, bottom, 64)) / 6));
+					colourBottom[1] = ((int)(BASECOLOUR + (turbulence(x, bottom, 64)) / 6));
 					fullImageHSV.at<Vec3b>(Point(x, bottom)) = colourBottom;
 					bottom++;
 					cout << "1";
@@ -855,14 +865,14 @@ int main(int argc, char* argv[])
 
 				else
 				{
-					/*if (colourBottom[1] == ((int)(220 + (turbulence(x, bottom, 64)) / 6)))
+					/*if (colourBottom[1] == ((int)(BASECOLOUR + (turbulence(x, bottom, 64)) / 6)))
 					{
-						colourBottom[1] = ((int)(220 + (turbulence(x, bottom, 64)) / 6)) - 1;
-						fullImageHSV.at<Vec3b>(Point(x, bottom)) = colourBottom;
+					colourBottom[1] = ((int)(BASECOLOUR + (turbulence(x, bottom, 64)) / 6)) - 1;
+					fullImageHSV.at<Vec3b>(Point(x, bottom)) = colourBottom;
 					}
 					*/
 
-					colourBottom[1] = ((int)(220 + (turbulence(x, bottom, 64)) / 6)) - 1;
+					colourBottom[1] = ((int)(BASECOLOUR + (turbulence(x, bottom, 64)) / 6)) - 1;
 					fullImageHSV.at<Vec3b>(Point(x, bottom)) = colourBottom;
 
 					bottom--;
@@ -873,7 +883,7 @@ int main(int argc, char* argv[])
 				previousColourBottom = fullImageHSV.at<Vec3b>(Point(x, bottom));
 			}
 		}
-		
+
 		//Decoding
 
 		cout << endl;
@@ -951,9 +961,9 @@ int main(int argc, char* argv[])
 				colourTop = fullImageHSV.at<Vec3b>(Point(x, top));
 				//cout << "x: " << x << " top: " << top << " ";
 				//cout << "ColourTop: " << (int)colourTop[1] << " ";
-				//cout << " Turbulence: " << ((int)(220 + (turbulence(x, top, 64)) / 6)) << " ";
-				
-				if (((int)(colourTop[1])) == ((int)(220 + (turbulence(x, top, 64)) / 6)))
+				//cout << " Turbulence: " << ((int)(BASECOLOUR + (turbulence(x, top, 64)) / 6)) << " ";
+
+				if (((int)(colourTop[1])) == ((int)(BASECOLOUR + (turbulence(x, top, 64)) / 6)))
 				{
 					top--;
 					cout << "0";
@@ -968,7 +978,7 @@ int main(int argc, char* argv[])
 				//cout << endl << "Bottom: " << bottom << endl;
 				colourBottom = fullImageHSV.at<Vec3b>(Point(x, bottom));
 
-				if (((int)(colourBottom[1])) == ((int)(220 + (turbulence(x, bottom, 64)) / 6)))
+				if (((int)(colourBottom[1])) == ((int)(BASECOLOUR + (turbulence(x, bottom, 64)) / 6)))
 				{
 					bottom++;
 					cout << "1";
@@ -1000,10 +1010,11 @@ int main(int argc, char* argv[])
 			bitsLeftBackup = bitsLeft;
 			reloadByte();
 		}
-		
-		cout << "Bits left: " << bitsLeft;
+
 		cvtColor(fullImageHSV, fullImageHSV, CV_HLS2BGR);
-		imwrite("E:\\Pictures\\marine-field-sky-steg.jpg", fullImageHSV);
+
+		cout << "Bits left: " << bitsLeft;
+		imwrite("E:\\Pictures\\steg.png", fullImageHSV);
 		imshow("Carrier", fullImageHSV);
 		waitKey(0);
 		cvtColor(fullImageHSV, fullImageHSV, CV_BGR2HLS);
